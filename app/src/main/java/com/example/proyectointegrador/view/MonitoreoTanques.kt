@@ -26,15 +26,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.proyectointegrador.util.showTankLowNotification
-
+import androidx.compose.ui.viewinterop.AndroidView
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import android.graphics.Color
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonitoreoTanques() {
-    var sensorData by remember { mutableStateOf(SensorData()) }
+    var sensorData by remember { mutableStateOf(SensorData(nivelAgua = 15)) } // simula 15%
     val context = LocalContext.current
     var notified by remember { mutableStateOf(false) }
+
+    val datosReutilizados = listOf(5f, 8f, 6.5f, 9f, 10f, 7.3f, 8.8f) // datos simulados
 
     LaunchedEffect(Unit) {
         observeSensorData {
@@ -44,7 +52,7 @@ fun MonitoreoTanques() {
                 showTankLowNotification(context)
                 notified = true
             } else if (sensorData.nivelAgua > 15) {
-                notified = false // se reinicia si vuelve a subir
+                notified = false
             }
         }
     }
@@ -59,13 +67,48 @@ fun MonitoreoTanques() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("🌊 Nivel de Agua: ${sensorData.nivelAgua}%" , style = MaterialTheme.typography.headlineSmall)
+            Text("🌊 Nivel de Agua: ${sensorData.nivelAgua}%", style = MaterialTheme.typography.headlineSmall)
             Text("💧 Flujo: ${sensorData.flujoAgua} L/min", style = MaterialTheme.typography.bodyLarge)
             Spacer(modifier = Modifier.height(20.dp))
             LinearProgressIndicator(progress = (sensorData.nivelAgua / 100f).coerceIn(0f, 1f))
             Spacer(modifier = Modifier.height(10.dp))
             Text("${sensorData.nivelAgua}%")
+
+            Spacer(modifier = Modifier.height(30.dp))
+            Text("📈 Reutilización de agua", style = MaterialTheme.typography.titleMedium)
+            ReutilizacionAguaChart(datosReutilizados)
         }
     }
 }
 
+
+@Composable
+fun ReutilizacionAguaChart(datos: List<Float>) {
+    AndroidView(factory = { context ->
+        val chart = LineChart(context)
+
+        val entries = datos.mapIndexed { index, value ->
+            Entry(index.toFloat(), value)
+        }
+
+        val dataSet = LineDataSet(entries, "Litros reutilizados").apply {
+            color = Color.BLUE
+            valueTextColor = Color.BLACK
+            lineWidth = 2f
+            setDrawCircles(true)
+            setDrawValues(true)
+        }
+
+        chart.data = LineData(dataSet)
+        chart.description = Description().apply { text = "Últimos días" }
+        chart.axisRight.isEnabled = false
+        chart.setTouchEnabled(true)
+        chart.invalidate()
+
+        chart
+    },
+        modifier = Modifier
+            .fillMaxSize()
+            .height(250.dp)
+    )
+}

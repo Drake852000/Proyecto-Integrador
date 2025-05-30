@@ -64,4 +64,5 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-analytics")
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }
