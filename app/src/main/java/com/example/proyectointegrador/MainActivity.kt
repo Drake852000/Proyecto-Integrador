@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "tank_channel_id",
+                "tank_channel_id", // Este ID debe coincidir
                 "Alerta de Tanque",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {

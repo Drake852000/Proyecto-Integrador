@@ -13,7 +13,7 @@ import android.Manifest
 fun showTankLowNotification(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            // No tiene permiso, no mostrar notificación
+            Log.d("Notificación", "Permiso de notificaciones denegado")
             return
         }
     }
@@ -28,4 +28,6 @@ fun showTankLowNotification(context: Context) {
     with(NotificationManagerCompat.from(context)) {
         notify(1001, builder.build())
     }
+
+    Log.d("Notificación", "✅ Notificación enviada correctamente")
 }
