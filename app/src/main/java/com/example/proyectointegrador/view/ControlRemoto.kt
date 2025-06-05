@@ -3,14 +3,16 @@ package com.example.proyectointegrador.view
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import com.example.proyectointegrador.model.EstadoBoton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ControlRemoto() {
-    var bombaActiva by remember { mutableStateOf(false) }
+    var estadoBoton by remember { mutableStateOf(EstadoBoton(false)) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Control Remoto") }) }
@@ -24,10 +26,10 @@ fun ControlRemoto() {
         ) {
             Text("Bomba de agua")
             Switch(
-                checked = bombaActiva,
-                onCheckedChange = { bombaActiva = it }
+                checked = estadoBoton.estado,
+                onCheckedChange = { estadoBoton.estado = it }
             )
-            Text(if (bombaActiva) "Encendida" else "Apagada")
+            Text(if (estadoBoton.estado) "Encendida" else "Apagada")
         }
     }
 }
