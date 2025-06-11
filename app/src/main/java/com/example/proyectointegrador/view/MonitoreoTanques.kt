@@ -31,7 +31,16 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import android.graphics.Color
 import android.util.Log
-
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.mutableStateListOf
+import com.example.proyectointegrador.network.RetrofitClient
+import com.github.mikephil.charting.components.XAxis
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,10 +49,11 @@ fun MonitoreoTanques() {
     val context = LocalContext.current
     var notified by remember { mutableStateOf(false) }
 
-    val datosReutilizados = listOf(5f, 8f, 6.5f, 9f, 10f, 7.3f, 8.8f) // datos simulados
+    val datosReutilizados = remember { mutableStateListOf<Float>() }
 
+    // 🔄 Obtener datos de Firebase (porcentaje y flujo)
     LaunchedEffect(Unit) {
-        Log.d("Vista", "Iniciando observador...") // Debug
+        Log.d("Vista", "Iniciando observador de Firebase...") // Debug
         observeSensorData { newData ->
             Log.d("Vista", "Datos recibidos: $newData") // Debug
             sensorData = newData
@@ -58,6 +68,21 @@ fun MonitoreoTanques() {
         }
     }
 
+    // 🔄 Obtener datos de Retrofit para la gráfica
+    LaunchedEffect(Unit) {
+        try {
+            val flujos = withContext(Dispatchers.IO) {
+                RetrofitClient.api.obtenerUltimosFlujos()
+            }
+
+            Log.d("DatosReutilizados", "Valores desde API: $flujos")
+            datosReutilizados.clear()
+            datosReutilizados.addAll(flujos.map { it.toFloat() })
+        } catch (e: Exception) {
+            Log.e("API Error", "Error al obtener flujos: ${e.message}")
+        }
+    }
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Monitoreo de Tanques") }) }
     ) { padding ->
@@ -69,46 +94,61 @@ fun MonitoreoTanques() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("🌊 Nivel de Agua: ${sensorData.nivelAgua}%", style = MaterialTheme.typography.headlineSmall)
-            println("🌊 Nivel de Agua: ${sensorData.nivelAgua}%")
             Spacer(modifier = Modifier.height(20.dp))
             LinearProgressIndicator(progress = (sensorData.nivelAgua / 100f).coerceIn(0f, 1f))
             Spacer(modifier = Modifier.height(10.dp))
             Text("💧 Flujo: ${sensorData.flujoAgua} L/min", style = MaterialTheme.typography.bodyLarge)
-            println("💧 Flujo: ${sensorData.flujoAgua} L/min")
             Spacer(modifier = Modifier.height(30.dp))
             Text("📈 Reutilización de agua", style = MaterialTheme.typography.titleMedium)
+
             ReutilizacionAguaChart(datosReutilizados)
         }
     }
 }
 
+
 @Composable
 fun ReutilizacionAguaChart(datos: List<Float>) {
-    AndroidView(factory = { context ->
-        val chart = LineChart(context)
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                description = Description().apply { text = "" }
+                axisRight.isEnabled = false
+                axisLeft.axisMinimum = 0f
+                xAxis.position = XAxis.XAxisPosition.BOTTOM
+                setTouchEnabled(false)
+                setScaleEnabled(false)
+                setNoDataText("Sin datos disponibles")
+            }
+        },
+        update = { chart ->
+            val entries = datos.mapIndexed { index, value ->
+                Entry(index.toFloat(), value)
+            }
 
-        val entries = datos.mapIndexed { index, value ->
-            Entry(index.toFloat(), value)
-        }
+            Log.d("Chart", "Entradas en gráfica: $entries")
 
-        val dataSet = LineDataSet(entries, "Litros reutilizados").apply {
-            color = Color.BLUE
-            valueTextColor = Color.BLACK
-            lineWidth = 2f
-            setDrawCircles(true)
-            setDrawValues(true)
-        }
+            if (entries.isEmpty()) {
+                chart.clear()
+                chart.invalidate()
+                return@AndroidView
+            }
 
-        chart.data = LineData(dataSet)
-        chart.description = Description().apply { text = "Últimos días" }
-        chart.axisRight.isEnabled = false
-        chart.setTouchEnabled(true)
-        chart.invalidate()
+            val dataSet = LineDataSet(entries, "").apply {
+                color = Color.BLUE
+                lineWidth = 3f
+                setDrawCircles(true)
+                setDrawValues(false) // Oculta números
+                setCircleColor(Color.BLUE)
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+            }
 
-        chart
-    },
+            chart.data = LineData(dataSet)
+            chart.invalidate()
+        },
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .height(250.dp)
     )
 }
+
