@@ -10,7 +10,11 @@ import androidx.core.content.ContextCompat
 import com.example.proyectointegrador.R
 import android.Manifest
 
-fun showTankLowNotification(context: Context) {
+fun showTankNotification(
+    context: Context,
+    title: String,
+    message: String
+) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             Log.d("Notificación", "Permiso de notificaciones denegado")
@@ -20,8 +24,8 @@ fun showTankLowNotification(context: Context) {
 
     val builder = NotificationCompat.Builder(context, "tank_channel_id")
         .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setContentTitle("Nivel bajo del tanque")
-        .setContentText("El tanque está al 15%. Por favor, rellénalo.")
+        .setContentTitle(title)
+        .setContentText(message)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setAutoCancel(true)
 
