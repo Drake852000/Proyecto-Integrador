@@ -35,10 +35,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.mutableStateListOf
 import com.example.proyectointegrador.network.RetrofitClient
 import com.github.mikephil.charting.components.XAxis
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -105,7 +101,6 @@ fun MonitoreoTanques() {
         }
     }
 }
-
 
 @Composable
 fun ReutilizacionAguaChart(datos: List<Float>) {

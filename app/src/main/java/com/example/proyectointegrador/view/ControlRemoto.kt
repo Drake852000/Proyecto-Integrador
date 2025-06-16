@@ -6,11 +6,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import com.example.proyectointegrador.model.SystemState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ControlRemoto() {
-    var bombaActiva by remember { mutableStateOf(false) }
+    var state by remember { mutableStateOf(SystemState()) }
+
+    LaunchedEffect(Unit) {
+        observeSystemState { newState ->
+            state = newState
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Control Remoto") }) }
@@ -24,10 +31,13 @@ fun ControlRemoto() {
         ) {
             Text("Bomba de agua")
             Switch(
-                checked = bombaActiva,
-                onCheckedChange = { bombaActiva = it }
+                checked = state.state,
+                onCheckedChange = { newValue ->
+                    // Update Firebase when the switch is toggled
+                    updateSystemState(newValue)
+                }
             )
-            Text(if (bombaActiva) "Encendida" else "Apagada")
+            Text(if (state.state) "Encendida" else "Apagada")
         }
     }
 }
