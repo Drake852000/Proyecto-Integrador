@@ -87,16 +87,18 @@ fun MonitoreoTanques() {
     LaunchedEffect(Unit) {
         try {
             val flujos = withContext(Dispatchers.IO) {
-                RetrofitClient.api.obtenerUltimosFlujos()
+                RetrofitClient.api.obtenerTop10Caudales()
             }
 
             Log.d("DatosReutilizados", "Valores desde API: $flujos")
+
             datosReutilizados.clear()
-            datosReutilizados.addAll(flujos.map { it.toFloat() })
+            datosReutilizados.addAll(flujos.map { it.caudal })
         } catch (e: Exception) {
             Log.e("API Error", "Error al obtener flujos: ${e.message}")
         }
     }
+
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Monitoreo de Tanques") }) }
