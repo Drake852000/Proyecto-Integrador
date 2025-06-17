@@ -39,6 +39,20 @@ import com.example.proyectointegrador.network.RetrofitClient
 import com.github.mikephil.charting.components.XAxis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.example.proyectointegrador.R
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,15 +110,9 @@ fun MonitoreoTanques() {
         ) {
             Text("🌊 Nivel de Agua: ${sensorData.nivelAgua}%", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(20.dp))
-            LinearProgressIndicator(
-                progress = {
-                    (sensorData.nivelAgua / 100f).coerceIn(0f, 1f)
-                   },
-                modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF4CAF50),
-                trackColor = Color.LightGray,
-                strokeCap = StrokeCap.Round,
-            )
+            TanqueConNivel(nivelAgua = sensorData.nivelAgua.toFloat())
+
+
             Spacer(modifier = Modifier.height(10.dp))
             Text("Flujo: ${sensorData.flujoAgua} L/min", style = MaterialTheme.typography.bodyLarge)
             Spacer(modifier = Modifier.height(30.dp))
@@ -114,6 +122,75 @@ fun MonitoreoTanques() {
         }
     }
 }
+
+@Composable
+fun TanqueConNivel(nivelAgua: Float) {
+    val containerWidthDp = 200.dp
+    val containerHeightDp = 250.dp
+
+    // Dimensiones y posición del *interior* del tanque ahora rectangular, en unidades del viewport.
+    // Basado en el nuevo pathData: M 50 20 H 150 V 230 H 50 Z
+    val innerTankLeftPx = 50f        // X del borde izquierdo del rectángulo
+    val innerTankTopPx = 20f         // Y del borde superior del rectángulo
+    val innerTankWidthPx = 100f      // Ancho del rectángulo (150 - 50 = 100)
+    val innerTankHeightPx = 210f     // Alto del rectángulo (230 - 20 = 210)
+
+    // Calculamos las proporciones en Float primero
+    val widthScaleFactor = innerTankWidthPx / 200f // 200f es viewportWidth
+    val heightScaleFactor = innerTankHeightPx / 250f // 250f es viewportHeight
+
+    // Ahora calculamos las dimensiones en Dp usando las proporciones Float
+    val waterAreaWidthDp = containerWidthDp * widthScaleFactor
+    val waterAreaHeightDp = containerHeightDp * heightScaleFactor
+
+    val currentWaterLevelRatio = (nivelAgua / 100f).coerceIn(0f, 1f)
+    val actualWaterHeightDp = waterAreaHeightDp * currentWaterLevelRatio
+
+    Box(
+        modifier = Modifier.size(width = containerWidthDp, height = containerHeightDp)
+    ) {
+        // --- EL AGUA (Box con color de fondo) ---
+        // Calcula la posición Y superior del agua dentro del contenedor.
+        // Posición Y del tope del área de llenado (en Dp)
+        val waterAreaTopInContainerDp = containerHeightDp * (innerTankTopPx / 250f)
+
+        // Calculamos la posición Y del TOP del agua, ajustando para el nivel actual
+        val waterTopYPositionInContainerDp = waterAreaTopInContainerDp + (waterAreaHeightDp - actualWaterHeightDp)
+
+        Box(
+            modifier = Modifier
+                // Offset horizontal: Posición X del agua desde el borde izquierdo del contenedor
+                .offset(x = containerWidthDp * (innerTankLeftPx / 200f),
+                    // Offset vertical: Posición Y del agua desde el borde superior del contenedor
+                    y = waterTopYPositionInContainerDp)
+                .width(waterAreaWidthDp)
+                .height(actualWaterHeightDp)
+                .background(
+                    color = Color(0xFF2196F3).copy(alpha = 0.5f), // Color del agua
+                    // Aquí puedes decidir si quieres el agua perfectamente rectangular (RoundedCornerShape(0.dp))
+                    // o si quieres una muy ligera redondez para la superficie superior del agua (ej: RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    shape = RoundedCornerShape(0.dp) // Agua perfectamente rectangular
+                )
+        )
+
+        // --- El CONTORNO del Tanque (Vector Asset) ---
+        // Se dibuja *después* del agua para que el contorno sea visible.
+        Image(
+            painter = painterResource(id = R.drawable.ic_tank_outline), // ¡Confirma que este ID sea correcto!
+            contentDescription = "Contorno del tanque",
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // --- El TEXTO del Porcentaje ---
+        Text(
+            text = "${nivelAgua.toInt()}%",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.Black,
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
+
 
 
 @Composable
