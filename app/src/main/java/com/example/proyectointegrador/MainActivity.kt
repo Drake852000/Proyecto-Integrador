@@ -26,6 +26,22 @@ import com.example.proyectointegrador.view.ControlRemoto
 import com.example.proyectointegrador.view.MantenimientoView
 import com.example.proyectointegrador.view.ConfiguracionView
 import android.Manifest
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+
 
 class MainActivity : ComponentActivity() {
 
@@ -74,38 +90,73 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf("tanques", "filtrado", "control", "mantenimiento", "config")
 
+    // Colores del tema para la NavigationBar
+    val colorPrimary = MaterialTheme.colorScheme.primary
+    val colorOnSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val colorSurface = MaterialTheme.colorScheme.surface
+    val colorOnSurface = MaterialTheme.colorScheme.onSurface
+    val colorBackground = MaterialTheme.colorScheme.background
+
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                // Fondo de la barra de navegación inferior
+                containerColor = colorSurface,
+                // Elevación sutil para que se "levante" del fondo
+                tonalElevation = 8.dp
+            ) {
                 items.forEach { screen ->
+                    val selected = navController.currentBackStackEntryAsState().value?.destination?.route == screen
                     NavigationBarItem(
                         icon = {
                             when (screen) {
-                                "tanques" -> Icon(Icons.Default.Water, contentDescription = null)
-                                "filtrado" -> Icon(Icons.Default.FilterAlt, contentDescription = null)
-                                "control" -> Icon(Icons.Default.Power, contentDescription = null)
-                                "mantenimiento" -> Icon(Icons.Default.Build, contentDescription = null)
-                                "config" -> Icon(Icons.Default.Settings, contentDescription = null)
+                                "tanques" -> Icon(Icons.Default.Water, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
+                                "filtrado" -> Icon(Icons.Default.FilterAlt, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
+                                "control" -> Icon(Icons.Default.Power, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
+                                "mantenimiento" -> Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
+                                "config" -> Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
                             }
                         },
-                        label = { Text(screen.replaceFirstChar { it.uppercaseChar() }) },
-                        selected = navController.currentBackStackEntryAsState().value?.destination?.route == screen,
+                        label = {
+                            Text(
+                                text = screen.replaceFirstChar { it.uppercaseChar() },
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            )
+                        },
+                        selected = selected,
                         onClick = {
-                            navController.navigate(screen) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    inclusive = false
+                            if (navController.currentBackStackEntry?.destination?.route != screen) {
+                                navController.navigate(screen) {
+                                    // Evita múltiples instancias de la misma pantalla
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true // Guarda el estado de la pantalla actual si quieres volver a ella
+                                    }
+                                    // Asegura que solo una copia del destino dado esté en la pila
+                                    launchSingleTop = true
+                                    // Restaura el estado cuando se vuelve a seleccionar un elemento
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
                             }
-                        }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            // Color del icono y texto cuando el elemento está seleccionado
+                            selectedIconColor = colorPrimary,
+                            selectedTextColor = colorPrimary,
+                            // Color del icono y texto cuando el elemento NO está seleccionado
+                            unselectedIconColor = colorOnSurfaceVariant,
+                            unselectedTextColor = colorOnSurfaceVariant,
+                            // Color del indicador (la pastilla) cuando el elemento está seleccionado
+                            indicatorColor = colorPrimary.copy(alpha = 0.1f) // Un color Primary translúcido
+                        )
                     )
                 }
             }
@@ -124,3 +175,5 @@ fun MainScreen() {
         }
     }
 }
+
+

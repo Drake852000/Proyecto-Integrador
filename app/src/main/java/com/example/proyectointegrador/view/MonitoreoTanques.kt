@@ -1,58 +1,46 @@
 package com.example.proyectointegrador.view
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.example.proyectointegrador.model.SensorData
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Color
-import com.example.proyectointegrador.util.showTankNotification
-import androidx.compose.ui.viewinterop.AndroidView
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
 import android.util.Log
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.toArgb
-import com.example.proyectointegrador.network.RetrofitClient
-import com.github.mikephil.charting.components.XAxis
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import com.example.proyectointegrador.R
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.proyectointegrador.network.RetrofitClient
+import com.example.proyectointegrador.model.SensorData
+import com.example.proyectointegrador.view.observeSensorData
+import com.example.proyectointegrador.util.showTankNotification
+import com.example.proyectointegrador.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.charts.LineChart
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,67 +48,176 @@ fun MonitoreoTanques() {
     var sensorData by remember { mutableStateOf(SensorData()) }
     val context = LocalContext.current
     var notified by remember { mutableStateOf(false) }
-
     val datosReutilizados = remember { mutableStateListOf<Float>() }
+    var isLoadingChartData by remember { mutableStateOf(true) } // Estado para el indicador de carga del gráfico
 
-    //  Obtener datos de Firebase (porcentaje y flujo)
+    // Paleta de colores de MaterialTheme para una mejor integración.
+    val colorPrimary = MaterialTheme.colorScheme.primary
+    val colorOnPrimary = MaterialTheme.colorScheme.onPrimary
+    val colorSurface = MaterialTheme.colorScheme.surface // Color de fondo de las Cards
+    val colorOnSurface = MaterialTheme.colorScheme.onSurface // Color del texto sobre las Cards
+    val colorBackground = MaterialTheme.colorScheme.background // Color de fondo de la pantalla
+
+    // Tus colores personalizados, si quieres usarlos directamente o como parte del tema.
+    // Aunque tealOscuro ya no se usa para el flujo, se mantiene aquí si lo necesitas para otras cosas.
+    val azulClaro = Color(0xFFB3E5FC)
+    val azulProfundo = Color(0xFF0288D1)
+    val turquesa = Color(0xFF4DD0E1)
+    val tealOscuro = Color(0xFF00796B)
+
+
+    // Observa los datos del sensor (Firebase o simulación)
     LaunchedEffect(Unit) {
-        Log.d("Vista", "Iniciando observador de Firebase...") // Debug
         observeSensorData { newData ->
-            Log.d("Vista", "Datos recibidos: $newData") // Debug
             sensorData = newData
-
+            // Lógica de notificación (sin cambios funcionales)
             if (sensorData.nivelAgua <= 15 && !notified) {
-                Log.d("Notificación", "Nivel bajo detectado") // Debug
-                showTankNotification(context, "Nivel de agua bajo", "El agua no esta fluyendo correctamente")
+                showTankNotification(context, "Nivel de agua bajo", "El agua no está fluyendo correctamente")
                 notified = true
-            } else if(sensorData.flujoAgua >= 90 && !notified) {
-                Log.d("Notificación", "Nivel alto detectado")
+            } else if (sensorData.flujoAgua >= 90 && !notified) {
                 showTankNotification(context, "Nivel de agua alto", "El agua puede desbordarse")
+                notified = true
             } else if (sensorData.flujoAgua < 90 && sensorData.nivelAgua > 15) {
                 notified = false
             }
         }
     }
 
-    //  Obtener datos de Retrofit para la gráfica
+    // Llama a la API para datos del gráfico (flujos más altos de la última hora)
     LaunchedEffect(Unit) {
+        isLoadingChartData = true
         try {
-            val flujos = withContext(Dispatchers.IO) {
+            val responseList = withContext(Dispatchers.IO) {
                 RetrofitClient.api.obtenerTop10Caudales()
             }
-
-            Log.d("DatosReutilizados", "Valores desde API: $flujos")
-
             datosReutilizados.clear()
-            datosReutilizados.addAll(flujos.map { it.caudal })
+            datosReutilizados.addAll(responseList.map { it.caudal })
         } catch (e: Exception) {
-            Log.e("API Error", "Error al obtener flujos: ${e.message}")
+            Log.e("API Error", "Error al obtener flujos para gráfico: ${e.message}", e)
+        } finally {
+            isLoadingChartData = false
         }
     }
 
-
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Monitoreo de Tanques") }) }
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Monitoreo de Tanques",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = colorOnSurface
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { /* TODO: Implementar navegación hacia atrás */ }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = colorOnSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorBackground,
+                    titleContentColor = colorOnSurface,
+                    actionIconContentColor = colorOnSurface,
+                    navigationIconContentColor = colorOnSurface
+                )
+            )
+        },
+        containerColor = colorBackground
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .background(colorBackground),
+            verticalArrangement = Arrangement.spacedBy(16.dp), // Espacio entre las tarjetas
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("🌊 Nivel de Agua: ${sensorData.nivelAgua}%", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(20.dp))
-            TanqueConNivel(nivelAgua = sensorData.nivelAgua.toFloat())
+            // Tarjeta de Nivel de Agua
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                colors = CardDefaults.cardColors(containerColor = colorSurface)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "🌊 Nivel de Agua",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = colorOnSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    TanqueConNivel(nivelAgua = sensorData.nivelAgua.toFloat())
+                }
+            }
 
+            // --- SE REMOVIÓ LA TARJETA DE FLUJO DE AGUA COMPLETA ---
 
-            Spacer(modifier = Modifier.height(10.dp))
-            Text("Flujo: ${sensorData.flujoAgua} L/min", style = MaterialTheme.typography.bodyLarge)
-            Spacer(modifier = Modifier.height(30.dp))
-            Text("Reutilización de agua", style = MaterialTheme.typography.titleMedium)
+            // Tarjeta de Gráfico de Reutilización de Agua
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = colorSurface)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "📈 Historial de Caudal (Última Hora)",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = colorOnSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
 
-            ReutilizacionAguaChart(datosReutilizados)
+                    // Indicador de carga o gráfico
+                    if (isLoadingChartData) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = colorPrimary)
+                            Text(
+                                "Cargando datos del gráfico...",
+                                modifier = Modifier.padding(top = 60.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorOnSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    } else if (datosReutilizados.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "No hay datos disponibles para el gráfico en la última hora.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorOnSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    } else {
+                        ReutilizacionAguaChart(datosReutilizados)
+                    }
+                }
+            }
         }
     }
 }
@@ -239,4 +336,3 @@ fun ReutilizacionAguaChart(datos: List<Float>) {
             .height(250.dp)
     )
 }
-
