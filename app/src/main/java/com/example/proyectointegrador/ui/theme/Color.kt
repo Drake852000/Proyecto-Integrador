@@ -13,3 +13,5 @@ val GrayText = Color(0xFF8E8E93)         // Texto secundario
 
 val GreenSuccess = Color(0xFF34C759)     // Indicador de estado "Activo"
 val RedAlert = Color(0xFFFF3B30)         // Alertas o errores
+val PrimaryBlueLight = Color(0xFF2196F3) // Un azul claro y vibrante, ideal para el color principal
+val PrimaryBlueDark = Color(0xFF1976D2)

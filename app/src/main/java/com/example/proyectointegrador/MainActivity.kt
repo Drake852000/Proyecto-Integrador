@@ -30,6 +30,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -40,8 +42,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
-
-
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.BeyondBoundsLayout
+import androidx.compose.ui.text.style.ResolvedTextDirection
+import androidx.compose.ui.unit.LayoutDirection
 
 class MainActivity : ComponentActivity() {
 
@@ -90,82 +94,94 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf("tanques", "filtrado", "control", "mantenimiento", "config")
 
-    // Colores del tema para la NavigationBar
     val colorPrimary = MaterialTheme.colorScheme.primary
+    val colorOnPrimary = MaterialTheme.colorScheme.onPrimary
     val colorOnSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val colorSurface = MaterialTheme.colorScheme.surface
     val colorOnSurface = MaterialTheme.colorScheme.onSurface
     val colorBackground = MaterialTheme.colorScheme.background
 
+    val extraBottomPadding = 60.dp // Puedes ajustar este valor si necesitas más/menos espacio
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                // Fondo de la barra de navegación inferior
-                containerColor = colorSurface,
-                // Elevación sutil para que se "levante" del fondo
-                tonalElevation = 8.dp
+            // <--- ¡CAMBIO CLAVE AQUÍ! Se envuelve NavigationBar en un Surface
+            Surface(
+                color = colorSurface, // Usa el color de superficie de tu tema
+                shadowElevation = 8.dp, // Una sombra sutil para "levantarla"
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) // Esquinas superiores redondeadas
             ) {
-                items.forEach { screen ->
-                    val selected = navController.currentBackStackEntryAsState().value?.destination?.route == screen
-                    NavigationBarItem(
-                        icon = {
-                            when (screen) {
-                                "tanques" -> Icon(Icons.Default.Water, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
-                                "filtrado" -> Icon(Icons.Default.FilterAlt, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
-                                "control" -> Icon(Icons.Default.Power, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
-                                "mantenimiento" -> Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
-                                "config" -> Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.padding(bottom = 2.dp))
-                            }
-                        },
-                        label = {
-                            Text(
-                                text = screen.replaceFirstChar { it.uppercaseChar() },
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            )
-                        },
-                        selected = selected,
-                        onClick = {
-                            if (navController.currentBackStackEntry?.destination?.route != screen) {
-                                navController.navigate(screen) {
-                                    // Evita múltiples instancias de la misma pantalla
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true // Guarda el estado de la pantalla actual si quieres volver a ella
-                                    }
-                                    // Asegura que solo una copia del destino dado esté en la pila
-                                    launchSingleTop = true
-                                    // Restaura el estado cuando se vuelve a seleccionar un elemento
-                                    restoreState = true
+                NavigationBar(
+                    containerColor = Color.Transparent, // Fondo transparente para que el Surface maneje el color
+                    tonalElevation = 0.dp // No elevación tonal en NavigationBar, el Surface lo gestiona
+                ) {
+                    items.forEach { screen ->
+                        val selected = navController.currentBackStackEntryAsState().value?.destination?.route == screen
+                        NavigationBarItem(
+                            icon = {
+                                val iconSize = if (selected) 28.dp else 24.dp
+                                when (screen) {
+                                    "tanques" -> Icon(Icons.Default.Water, contentDescription = null, modifier = Modifier.size(iconSize))
+                                    "filtrado" -> Icon(Icons.Default.FilterAlt, contentDescription = null, modifier = Modifier.size(iconSize))
+                                    "control" -> Icon(Icons.Default.Power, contentDescription = null, modifier = Modifier.size(iconSize))
+                                    "mantenimiento" -> Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(iconSize))
+                                    "config" -> Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(iconSize))
                                 }
-                            }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            // Color del icono y texto cuando el elemento está seleccionado
-                            selectedIconColor = colorPrimary,
-                            selectedTextColor = colorPrimary,
-                            // Color del icono y texto cuando el elemento NO está seleccionado
-                            unselectedIconColor = colorOnSurfaceVariant,
-                            unselectedTextColor = colorOnSurfaceVariant,
-                            // Color del indicador (la pastilla) cuando el elemento está seleccionado
-                            indicatorColor = colorPrimary.copy(alpha = 0.1f) // Un color Primary translúcido
+                            },
+                            label = {
+                                Text(
+                                    text = screen.replaceFirstChar { it.uppercaseChar() },
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                )
+                            },
+                            selected = selected,
+                            onClick = {
+                                if (navController.currentBackStackEntry?.destination?.route != screen) {
+                                    navController.navigate(screen) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = colorOnPrimary,
+                                selectedTextColor = colorPrimary,
+                                unselectedIconColor = colorOnSurfaceVariant,
+                                unselectedTextColor = colorOnSurfaceVariant,
+                                indicatorColor = colorPrimary
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
-    ) { padding ->
+    ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = "tanques",
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(
+                top = paddingValues.calculateTopPadding(),
+                // Asegúrate de que el padding inferior sea suficiente para tu NavigationBar + extra
+                // El `extraBottomPadding` es el espacio adicional que quieres *debajo* del contenido del NavHost,
+                // que la NavigationBar y su posible altura extra (si la defines) llenarán.
+                // Si la NavigationBar crece en altura, el paddingValues.calculateBottomPadding() crecerá automáticamente.
+                // El `extraBottomPadding` es para ese espacio *adicional* debajo de la barra normal.
+                bottom = paddingValues.calculateBottomPadding() + extraBottomPadding,
+                start = paddingValues.calculateStartPadding(layoutDirection = LayoutDirection.Ltr),
+                end = paddingValues.calculateEndPadding(layoutDirection = LayoutDirection.Ltr)
+            )
         ) {
             composable("tanques") { MonitoreoTanques() }
             composable("filtrado") { SistemaFiltrado() }
@@ -175,5 +191,3 @@ fun MainScreen() {
         }
     }
 }
-
-
